@@ -4,12 +4,12 @@ let weboscketPotassium_callback = null;
 //避免重复连接
 let lockReconnect = false;
 let timeoutnum = null; //断开 重连倒计时
-let initWebSocketPotassium = (callback) => {
+let initWebSocketPotassium = (wsurl,callback) => {
     weboscketPotassium_callback = callback
     // let wsurl = "wss://share-test.metazen-tech.com:3000/";
     // let wsurl = "wss://10.10.110.60:3000/";
     // let wsurl = "ws://10.10.10.216:3000/";
-    let wsurl = "wss://i25817465a.imdo.co";
+    // let wsurl = "wss://i25817465a.imdo.co";
 	
     //初始化 websocket
     if ('WebSocket' in window) {

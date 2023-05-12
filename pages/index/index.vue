@@ -4,14 +4,14 @@
 		<!-- <view class="text-area">
 			<button type="default" @click="clickShowPopup"> Click弹出层</button>
 		</view> -->
-		<view class="custom" >
-			<view class="customLeft">
+		<view class="custom">
+			<view class="customLeft" @click="clickShowPopupWSS()">
 				<image class="" src="../../static/icon-logo.png" mode="widthFix"></image>
 			</view>
 			<view class="customMid">
 				<image class="" src="../../static/icon-title.png" mode="widthFix"></image>
 			</view>
-			<view class="customRight"  @click="clickShowPopup()">
+			<view class="customRight" @click="clickShowPopup()">
 				<image class="" src="../../static/icon-option.png" mode="widthFix"></image>
 			</view>
 		</view>
@@ -48,12 +48,9 @@
 					<view :class="recording ? 'inputBtnRecording':'inputBtnDefault'" @longtap="langTap"
 						@touchstart="touchStart" @touchmove="touchMove" @touchend="touchEnd">
 						<view :class="cancelRecord?'inputIconBox':'inputIconBoxCannel'">
-							<image v-if="recording&&(recordStatus==2)" class="inputIcon" src="../../static/icon-mic.png"
-								mode="widthFix"></image>
-							<image v-if="recording&&(recordStatus==1)" class="inputIcon"
-								src="../../static/icon-mic1.png" mode="widthFix"></image>
-							<image v-if="!recording&&(recordStatus==0)" class="inputIcon"
-								src="../../static/icon-mic1.png" mode="widthFix"></image>
+							<image v-if="recording&&(recordStatus==2)" class="inputIcon" src="../../static/icon-mic.png" mode="widthFix"></image>
+							<image v-if="recording&&(recordStatus==1)" class="inputIcon" src="../../static/icon-mic1.png" mode="widthFix"></image>
+							<image v-if="!recording&&(recordStatus==0)" class="inputIcon" src="../../static/icon-mic1.png" mode="widthFix"></image>
 						</view>
 
 					</view>
@@ -69,13 +66,19 @@
 
 		<uni-popup ref="popup" type="bottom" mask-background-color=rgba(0,0,0,0.7)>
 			<view class="optionBtn">
+				<button type="default" data-index="7" @click="clickPlayVideo">Focus To Face</button>
+				<view class="_line" style="width: 100%;height: 1px;background-color: #3a3a3a;"></view>
+				<button type="default" data-index="8" @click="clickPlayVideo">Focus To Body</button>
+				<view class="_line" style="width: 100%;height: 1px;background-color: #3a3a3a;"></view>
+				<button type="default" data-index="9" @click="clickPlayVideo">Focus To Bust</button>
+				<view class="_line" style="width: 100%;height: 1px;background-color: #3a3a3a;"></view>
 				<button type="default" data-index="1" @click="clickPlayVideo">Play Video1</button>
 				<view class="_line" style="width: 100%;height: 1px;background-color: #3a3a3a;"></view>
 				<button type="default" data-index="2" @click="clickPlayVideo">Play Video2</button>
 				<view class="_line" style="width: 100%;height: 1px;background-color: #3a3a3a;"></view>
-<!-- 				<button type="default" data-index="3" @click="clickPlayVideo">Play Video3</button>
+				<!-- 				<button type="default" data-index="3" @click="clickPlayVideo">Play Video3</button>
 				<view class="_line" style="width: 100%;height: 1px;background-color: #3a3a3a;"></view> -->
-<!-- 				<button type="default" data-index="4" @click="clickPlayVideo">Play Background</button>
+				<!-- 				<button type="default" data-index="4" @click="clickPlayVideo">Play Background</button>
 				<view class="_line" style="width: 100%;height: 1px;background-color: #3a3a3a;"></view> -->
 				<button type="default" data-index="3" @click="clickPlayVideo">Play Background</button>
 				<view class="_line" style="width: 100%;height: 1px;background-color: #3a3a3a;"></view>
@@ -85,18 +88,34 @@
 				<button type="default" @click="clickHidePopup">Cancel</button>
 			</view>
 		</uni-popup>
+		<uni-popup ref="popupWSS" type="center" mask-background-color=rgba(0,0,0,0.7)>
+			<view class="popupWSSMain">
+				<input type="text" name="" id="" @input="inputWSS" :value="WSSUrl" placeholder="wss://**.**.***.**">
+				<button type="warn" plain="true" @click="disconnectWSS">disconnect</button>
+				<button type="default" plain="true" @click="clickHidePopupWSS">cancel</button>
+				<button type="primary" plain="true" @click="connectWSS">connect</button>
+				<view style="margin-top: 20rpx;">
+					<text style="margin-right: 20rpx;">CN/EN</text>  <switch :checked="language" @change="languageSwitch" />
+				</view>
+			</view>
+		</uni-popup>
 	</view>
 </template>
 
 <script>
 	import '@/common/net/netAgent.js'
-	import {HZRecorder} from '../../Utils/HZRecorder.js';
-	import {initWebSocketPotassium, sendDataPotassium, websocketOnmessagePotassium, closeWebsocketPotassium} from '../../Utils/ws.js';
+	import {
+		HZRecorder
+	} from '../../Utils/HZRecorder.js';
+	import {
+		initWebSocketPotassium,
+		sendDataPotassium,
+		websocketOnmessagePotassium,
+		closeWebsocketPotassium
+	} from '../../Utils/ws.js';
 
 	import axios from 'axios'
 
-	// const recorderManager = uni.getRecorderManager();
-	// const innerAudioContext = uni.createInnerAudioContext();
 
 	export default {
 		data() {
@@ -111,15 +130,31 @@
 
 				recorder: null,
 				innerAudioContext: '',
+
+				showUserPart: false,
+				showRobotPart: false,
+
+				isLangTap: false,
+				// WSSUrl:'wss://i25817465a.imdo.co',
+				// WSSUrl:'wss://i7u3629729.goho.co',
+				// WSSUrl:'wss://yjwpv79rnsupshsh3.neiwangyun.net',
+				WSSUrl:'ws://10.10.110.227:3000',
 				
-				showUserPart:false,
-				showRobotPart:false,
-				
-				isLangTap:false,
+				language:true,
+				langugeType:'recognition'
 			}
 		},
 		onLoad() {
-
+			let WSSURL = localStorage.getItem("WSSURL");
+			if(WSSURL){
+				console.log(WSSURL);
+				this.WSSUrl = WSSURL;
+			}else{
+				console.log("未连接其他WS");
+			}
+			let isdebug = window.netAgent.getQueryVariable("isdebug", "?")
+			console.log(isdebug);
+			window.netAgent.isShowVConsole(isdebug);
 		},
 		mounted() {
 			let that = this;
@@ -129,12 +164,13 @@
 					navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia;
 					window.URL = window.URL || window.webkitURL;
 					audio_context = new AudioContext;
-					console.log('navigator.getUserMedia ' + (navigator.getUserMedia ? 'available.' : 'not present!'));
+					console.log('navigator.getUserMedia ' + (navigator.getUserMedia ? 'available.' :
+						'not present!'));
 				} catch (e) {
 					console.log('No web audio support in this browser!');
-					
+
 				}
-				if(navigator.getUserMedia){
+				if (navigator.getUserMedia) {
 					navigator.getUserMedia({
 						audio: true
 					}, function(stream) {
@@ -142,13 +178,13 @@
 						console.log('初始化完成');
 					}, function(e) {
 						console.log('No live audio input: ' + e);
-						
+
 					});
-				}else{
+				} else {
 					uni.showModal({
 						title: '提示',
 						content: '当前设备不支持录音',
-						success: function (res) {
+						success: function(res) {
 							if (res.confirm) {
 								// console.log('用户点击确定');
 							} else if (res.cancel) {
@@ -160,32 +196,33 @@
 
 
 			})
-			this.innerAudioContext = uni.createInnerAudioContext();
-			this.innerAudioContext.autoplay = true;
-			// innerAudioContext.src = 'https://bjetxgzv.cdn.bspapp.com/VKCEYUGU-hello-uniapp/2cc220e0-c27a-11ea-9dfb-6da8e309e0d8.mp3';
-			this.innerAudioContext.onPlay(() => {
+			that.innerAudioContext = uni.createInnerAudioContext();
+			that.innerAudioContext.autoplay = true;
+			// this.innerAudioContext.src = 'https://bjetxgzv.cdn.bspapp.com/VKCEYUGU-hello-uniapp/2cc220e0-c27a-11ea-9dfb-6da8e309e0d8.mp3';
+			that.innerAudioContext.onPlay(() => {
 				console.log('开始播放');
 			});
-			this.innerAudioContext.onError((res) => {
+			that.innerAudioContext.onError((res) => {
 				console.log(res.errMsg);
 				console.log(res.errCode);
 			});
-			initWebSocketPotassium((msg)=>{
+			initWebSocketPotassium(that.WSSUrl,(msg) => {
 				// console.log("heartCheck")；
 				var _msg = JSON.parse(msg.data);
-				if(_msg.answer){
+				if (_msg.answer) {
 					console.log(_msg.answer);
-					this.showRobotPart = true;
-					this.robotMsg = this.robotMsg + _msg.answer + "。";
+					that.showRobotPart = true;
+					that.robotMsg = that.robotMsg + _msg.answer + "。";
 				}
 			})
+			
 		},
-		beforeDestroy(){
+		beforeDestroy() {
 			closeWebsocketPotassium();
 			uni.showModal({
 				title: '提示',
 				content: '断开提示',
-				success: function (res) {
+				success: function(res) {
 					if (res.confirm) {
 						// console.log('用户点击确定');
 					} else if (res.cancel) {
@@ -195,6 +232,50 @@
 			});
 		},
 		methods: {
+			clickShowPopupWSS(){
+				this.$refs.popupWSS.open();
+			},
+			clickHidePopupWSS(){
+				this.$refs.popupWSS.close();
+			},
+			inputWSS(e){
+				// console.log(e.detail.value);
+				this.WSSUrl = e.detail.value;
+			},
+			disconnectWSS(){
+				closeWebsocketPotassium();
+			},
+			connectWSS(){
+				if(this.WSSUrl.length>0&&this.WSSUrl!=""){
+					closeWebsocketPotassium();
+					initWebSocketPotassium(this.WSSUrl,(msg) => {
+						// console.log("heartCheck")；
+						var _msg = JSON.parse(msg.data);
+						if (_msg.answer) {
+							console.log(_msg.answer);
+							this.showRobotPart = true;
+							this.robotMsg = this.robotMsg + _msg.answer + "。";
+						}
+					})
+					localStorage.setItem("WSSURL",this.WSSUrl);
+					this.clickHidePopupWSS();
+				}else{
+					uni.showToast({
+						icon:'error',
+						title:'Url  Is  Empty！'
+					})
+				}
+			},
+			languageSwitch(e){
+				console.log(e.detail.value)
+				if(e.detail.value){
+					this.language = e.detail.value;
+					this.langugeType='recognition';
+				}else if(!e.detail.value){
+					this.language = e.detail.value
+					this.langugeType='recognitionCN';
+				}
+			},
 			clickShowPopup() {
 				// console.log("clickShowPopup")
 				this.$refs.popup.open();
@@ -206,16 +287,23 @@
 			clickLinkServices() {
 				// console.log("clickLinkServices");
 				this.clickHidePopup();
-				sendDataPotassium(JSON.stringify({ close: 'close'}));
+				sendDataPotassium(JSON.stringify({close: 'close'}));
 			},
 			clickPlayVideo(e) {
 				// console.log(e.currentTarget.dataset.index);
 				this.clickHidePopup();
-				sendDataPotassium(JSON.stringify({ sence: e.currentTarget.dataset.index}));
+				sendDataPotassium(JSON.stringify({close: 'close'}));
+				sendDataPotassium(JSON.stringify({sence: e.currentTarget.dataset.index}));
+			},
+			clickPlayAudio(e) {
+				// console.log(e.currentTarget.dataset.index);
+				this.clickHidePopup();
+				sendDataPotassium(JSON.stringify({close: 'close'}));
+				sendDataPotassium(JSON.stringify({audio: e.currentTarget.dataset.index}));
 			},
 			langTap() {
 				clearTimeout(langtaptimeout);
-				let langtaptimeout =  setTimeout(()=>{
+				let langtaptimeout = setTimeout(() => {
 					console.log('langTap');
 					this.recorder.start();
 					this.showUserPart = false;
@@ -226,8 +314,8 @@
 					this.recording = true;
 					this.recordStatus = 2;
 					// sendDataPotassium(JSON.stringify({ sence: '3'}));
-					// sendDataPotassium(JSON.stringify({ close: 'close'}));
-				},200)
+					sendDataPotassium(JSON.stringify({ close: 'close'}));
+				}, 200)
 			},
 			touchStart(e) {
 				let that = this;
@@ -235,14 +323,14 @@
 				that.clientX = e.changedTouches[0].clientX; //手指按下时的X坐标
 				that.clientY = e.changedTouches[0].clientY; //手指按下时的Y坐标
 				// if(that.isLangTap){
-					navigator.getUserMedia({
-						audio: true
-					}, function(stream) {
-						that.recorder = new HZRecorder(stream)
-						console.log('初始化完成');
-					}, function(e) {
-						console.log('No live audio input: ' + e);
-					});
+				navigator.getUserMedia({
+					audio: true
+				}, function(stream) {
+					that.recorder = new HZRecorder(stream)
+					console.log('初始化完成');
+				}, function(e) {
+					console.log('No live audio input: ' + e);
+				});
 				// }
 
 			},
@@ -263,39 +351,47 @@
 				}
 			},
 			touchEnd() {
-
 				this.recordStatus = 0;
 				if (!this.cancelRecord) {
-					// 完成录音
+				// 	// 完成录音
+
 					this.recorder.stop();
 					this.recorder.getBlob();
-					
-					var mp3Blob = this.recorder.upload();
+
+					var mp3Blob = this.recorder.getBlob();
 					// console.log(mp3Blob);
 					let files = new File([mp3Blob], 'input.wav', {
 						type: 'audio/wav',
 						lastModified: Date.now()
 					});
 					var fd = new FormData();
-					fd.append('file', files);
-					console.log(fd)
+					// fd.append('file', files);
+					fd.append('multipartFile', files);
 					
-					
+					var url = window.URL.createObjectURL(mp3Blob);
+					console.log(url);
+
 					axios({
 						// baseURL: 'http://182.92.118.211:30020/business/aiSend/',
-						baseURL: 'https://share-test.metazen-tech.com/business/aiSend/',
+						// baseURL: 'https://share-test.metazen-tech.com/business/aiSend/',
+						baseURL: 'https://aigc.metazen-tech.com/meta-tts/speech/',
 						method: 'POST',
-						url: 'speakChange',
+						// url: 'speakChange',
+						url: this.langugeType,
+						// url: 'recognitionCN',
 						headers: {
 							"Content-Type": "multipart/form-data",
 						},
 						data: fd,
 					}).then(res => {
 						console.info(res);
-						if(res.data.msg||res.data.msg.length>0){
-							this.userMsg = res.data.msg;
+						// if(res.data.msg||res.data.msg.length>0||res.data.msg!==""){
+						if(res.data.data||res.data.data.length>0||res.data.data!==""){
+							// this.userMsg = res.data.msg;
+							this.userMsg = res.data.data;
 							this.showUserPart = true;
-							sendDataPotassium(JSON.stringify({ ask: res.data.msg}));
+							// sendDataPotassium(JSON.stringify({ ask: res.data.msg}));
+							sendDataPotassium(JSON.stringify({ ask: res.data.data}));
 						}else{
 							uni.showToast({
 								title: '当前为说话或录入声音太小',
@@ -308,17 +404,26 @@
 					})
 				} else {
 					// 此时松手后响应的是取消录音
+					console.info('取消录音')
 				}
-				
+
 				// sendDataPotassium(JSON.stringify({ ask: "你好"}));
-				
-				this.recorder.play(this.innerAudioContext);
+
+				// this.recorder.play(this.innerAudioContext);
 				this.recording = false;
 				this.cancelRecord = false;
 				this.isLangTap = false;
 
 			},
-			
+			playVoice() {
+				console.log('播放录音');
+	
+				if (this.voicePath) {
+					this.innerAudioContext.src = this.voicePath;
+					this.innerAudioContext.play();
+				}
+			}
+
 
 		}
 	}
@@ -339,7 +444,7 @@
 	}
 
 	image {
-		pointer-events: none;
+		pointer-events: none !important;
 	}
 
 	.contentBg {
@@ -350,7 +455,8 @@
 		position: absolute;
 		z-index: -1;
 	}
-	.custom{
+
+	.custom {
 		width: 100vw;
 		height: 100rpx;
 		overflow: hidden;
@@ -358,47 +464,54 @@
 		display: flex;
 		flex-direction: row;
 		align-items: center;
-		justify-content:space-between;
+		justify-content: space-between;
 	}
-	.customLeft{
+
+	.customLeft {
 		height: 100%;
 		display: flex;
 		align-items: center;
 	}
-	.customMid{
+
+	.customMid {
 		height: 100%;
 		display: flex;
 		align-items: center;
 	}
-	.customRight{
+
+	.customRight {
 		height: 100%;
 		display: flex;
 		align-items: center;
 	}
-	.customLeft>image{
+
+	.customLeft>image {
 		width: 62rpx;
 		height: 32rpx;
 		margin-left: 32rpx;
 	}
-	.customMid>image{
+
+	.customMid>image {
 		width: 176rpx;
 		height: 36rpx;
 	}
-	.customRight>image{
+
+	.customRight>image {
 		width: 40rpx;
 		height: 40rpx;
 		margin-right: 32rpx;
 	}
-	
-	.optionBtn{
+
+	.optionBtn {
 		width: 96vw;
 		height: auto;
 		overflow: hidden;
 		background-color: #202020;
 		border-radius: 20rpx;
-		margin:0 auto 16rpx;
+		margin: 0 auto 16rpx;
 	}
-	.optionBtn>button{
+
+	.optionBtn>button {
 		background-color: #202020;
 		font-size: 36rpx;
 		font-family: PingFang SC;
@@ -406,15 +519,17 @@
 		color: #FFFFFF;
 		margin-top: 2rpx;
 	}
-	.cannelBtn{
+
+	.cannelBtn {
 		width: 96vw;
 		height: auto;
 		overflow: hidden;
 		background-color: #202020;
 		border-radius: 20rpx;
-		margin:0 auto 40rpx;
+		margin: 0 auto 40rpx;
 	}
-	.cannelBtn>button{
+
+	.cannelBtn>button {
 		background-color: #202020;
 		font-size: 36rpx;
 		font-family: PingFang SC;
@@ -422,8 +537,8 @@
 		color: #007AFF;
 		margin-bottom: 10rpx;
 	}
-	
-	
+
+
 	.main {
 		width: 100vw;
 		height: 90vh;
@@ -534,6 +649,7 @@
 		font-weight: bold;
 		color: #EFEFEF;
 		line-height: 74rpx;
+		pointer-events:none
 	}
 
 	.inputTipsRelease {
@@ -644,4 +760,30 @@
 		line-height: 40rpx;
 		word-break: break-all;
 	}
+	
+	.popupWSSMain{
+		width: 90vw;
+		height: 40vh;
+		background-color: #fff;
+		border-radius: 20rpx;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+	}
+	.popupWSSMain>input{
+		width: 80vw;
+		height: 80rpx;
+		margin: 0 auto;
+		border: 1px solid #000;
+		border-radius: 10rpx;
+		padding: 5rpx;
+		margin: 20rpx;
+	}
+	.popupWSSMain>button{
+		width: 80vw;
+		margin: 10rpx;
+	}
+
+	
 </style>

@@ -4,35 +4,31 @@ import vConsole from '../../common/vconsole/vconsole.min.js';
 class NetAgent {
 
 	constructor() {
-		this.isShowLog = true;
-		this.isver; //判断ios系统版本
+		// this.isver; //判断ios系统版本
 
-		if (this.isShowLog) {
-			// new vConsole();
-		}
 		let isOffline = false; //是否单机模式
 		this.netEngine = new NetEngine(this.isShowLog, isOffline);
 
 	}
 
 	// 获取系统版本号
-	getSystemVer() {
-		var str = navigator.userAgent.toLowerCase();
-		var ver = str.match(/cpu iphone os (.*?) like mac os/);
+	// getSystemVer() {
+	// 	var str = navigator.userAgent.toLowerCase();
+	// 	var ver = str.match(/cpu iphone os (.*?) like mac os/);
 
-		if (ver == null) {
-			console.log("安卓");
-		} else {
-			var vnum = ver[1].replace(/_/g, ",");
-			var arr = vnum.split(",")
-			// console.log(arr);
-			if (arr[0] > 13 && arr[1] >= 3) {
-				this.isver = false;
-			} else {
-				this.isver = true;
-			}
-		}
-	}
+	// 	if (ver == null) {
+	// 		console.log("安卓");
+	// 	} else {
+	// 		var vnum = ver[1].replace(/_/g, ",");
+	// 		var arr = vnum.split(",")
+	// 		// console.log(arr);
+	// 		if (arr[0] > 13 && arr[1] >= 3) {
+	// 			this.isver = false;
+	// 		} else {
+	// 			this.isver = true;
+	// 		}
+	// 	}
+	// }
 	faceSwap(sourceImage,targetVideo,callback) {
 		let _data ={
 				sourceImage: sourceImage,
@@ -87,7 +83,30 @@ class NetAgent {
 			}
 		)
 	}
-	
+	//从链接地址中获取参数值
+	getQueryVariable(variable, code) {
+		var query = location.href;
+		query = location.href.split('?');
+		if (query.length == 1) {
+			return false;
+		} else {
+			query = query[1];
+		}
+		var vars = query.split(code);
+		for (var i = 0; i < vars.length; i++) {
+			var pair = vars[i].split("=");
+			if (pair[0] == variable) {
+				var val = pair[1].split("#");
+				return val[0];
+			}
+		}
+		return false;
+	}
+	isShowVConsole(isdebug){
+		if(isdebug){
+			new vConsole();
+		}
+	}
 
 	//---------------示例-------------
 	// 分享
