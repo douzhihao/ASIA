@@ -1,12 +1,12 @@
 <template>
 	<view class="content">
 		<view class="contentBg"></view>
-		<!-- <view class="text-area">
-			<button type="default" @click="clickShowPopup"> Click弹出层</button>
-		</view> -->
 		<view class="custom">
 			<view class="customLeft" @click="clickShowPopupWSS()">
 				<image class="" src="../../static/icon-logo.png" mode="widthFix"></image>
+				<view class="tipsPoint">
+					<view :class="tipsPoint?'greenPoint':'redPoint'"></view>
+				</view>
 			</view>
 			<view class="customMid">
 				<image class="" src="../../static/icon-title.png" mode="widthFix"></image>
@@ -27,13 +27,27 @@
 					</view>
 				</view>
 				<view class="robotPart" v-show="showRobotPart">
-					<view class="headimg">
-						<image src="../../static/icon-robot1.png" mode=""></image>
+
+					<view v-show="isThinking" class="robotPartList">
+						<view class="headimg">
+							<image src="../../static/icon-robot2.jpg" mode=""></image>
+						</view>
+						<view class="triangle"></view>
+						<view class="thinking">
+							<image src="../../static/thinking.gif" mode="widthFix"></image>
+						</view>
 					</view>
-					<view class="triangle"></view>
-					<view class="text">
-						{{robotMsg}}
+					
+					<view v-show="!isThinking" class="robotPartList" v-for="(item,index) in robotMsgList" :key="index">
+						<view class="headimg">
+							<image src="../../static/icon-robot2.jpg" mode=""></image>
+						</view>
+						<view class="triangle"></view>
+						<view v-for="(item,index) in item.split('>MZsplit<').reverse()" :key="index"  :class="index==1?'sort':'text'">
+							{{item}}
+						</view>
 					</view>
+					
 				</view>
 			</view>
 			<view class="inputWav">
@@ -82,7 +96,7 @@
 				<view class="_line" style="width: 100%;height: 1px;background-color: #3a3a3a;"></view> -->
 				<button type="default" data-index="3" @click="clickPlayVideo">Play Background</button>
 				<view class="_line" style="width: 100%;height: 1px;background-color: #3a3a3a;"></view>
-				<button type="default" @click="clickLinkServices">Link Services</button>
+				<button type="default" @click="clickLinkServices">Reset Background</button>
 			</view>
 			<view class="cannelBtn">
 				<button type="default" @click="clickHidePopup">Cancel</button>
@@ -127,6 +141,10 @@
 				recordStatus: 0, //录音状态 0=默认 1=录音中 2=上滑取消录音
 				userMsg: '', //
 				robotMsg: '', //
+				// robotMsgList:'',
+				robotMsgList:[],
+				robotMsgSort:[],
+				tipsPoint:false,
 
 				recorder: null,
 				innerAudioContext: '',
@@ -135,10 +153,12 @@
 				showRobotPart: false,
 
 				isLangTap: false,
-				// WSSUrl:'wss://i25817465a.imdo.co',
+				isThinking:false,
 				// WSSUrl:'wss://i7u3629729.goho.co',
+				// WSSUrl:'wss://i25817465a.imdo.co',
 				// WSSUrl:'wss://yjwpv79rnsupshsh3.neiwangyun.net',
-				WSSUrl:'ws://10.10.110.227:3000',
+				WSSUrl:'ws://10.10.10.216:3000',
+				// WSSUrl:'wss://54774dq657.zicp.fun',
 				
 				language:true,
 				langugeType:'recognition'
@@ -209,27 +229,31 @@
 			initWebSocketPotassium(that.WSSUrl,(msg) => {
 				// console.log("heartCheck")；
 				var _msg = JSON.parse(msg.data);
+				that.tipsPoint = true;
 				if (_msg.answer) {
 					console.log(_msg.answer);
 					that.showRobotPart = true;
-					that.robotMsg = that.robotMsg + _msg.answer + "。";
+					that.isThinking = false;
+					let answerList = new Array;
+					answerList.unshift(_msg.answer);
+					that.robotMsgList = that.robotMsgList.concat(answerList);
 				}
 			})
 			
 		},
 		beforeDestroy() {
 			closeWebsocketPotassium();
-			uni.showModal({
-				title: '提示',
-				content: '断开提示',
-				success: function(res) {
-					if (res.confirm) {
-						// console.log('用户点击确定');
-					} else if (res.cancel) {
-						// console.log('用户点击取消');
-					}
-				}
-			});
+			// uni.showModal({
+			// 	title: '提示',
+			// 	content: '断开提示',
+			// 	success: function(res) {
+			// 		if (res.confirm) {
+			// 			// console.log('用户点击确定');
+			// 		} else if (res.cancel) {
+			// 			// console.log('用户点击取消');
+			// 		}
+			// 	}
+			// });
 		},
 		methods: {
 			clickShowPopupWSS(){
@@ -243,6 +267,10 @@
 				this.WSSUrl = e.detail.value;
 			},
 			disconnectWSS(){
+				let that = this;
+				setTimeout(()=>{
+					that.tipsPoint = false;
+				},1000)
 				closeWebsocketPotassium();
 			},
 			connectWSS(){
@@ -251,10 +279,14 @@
 					initWebSocketPotassium(this.WSSUrl,(msg) => {
 						// console.log("heartCheck")；
 						var _msg = JSON.parse(msg.data);
+						this.tipsPoint = true;
 						if (_msg.answer) {
 							console.log(_msg.answer);
 							this.showRobotPart = true;
-							this.robotMsg = this.robotMsg + _msg.answer + "。";
+							this.isThinking = false;
+							let answerList = new Array;
+							answerList.unshift(_msg.answer);
+							this.robotMsgList = this.robotMsgList.concat(answerList);
 						}
 					})
 					localStorage.setItem("WSSURL",this.WSSUrl);
@@ -287,7 +319,8 @@
 			clickLinkServices() {
 				// console.log("clickLinkServices");
 				this.clickHidePopup();
-				sendDataPotassium(JSON.stringify({close: 'close'}));
+				// sendDataPotassium(JSON.stringify({close: 'close'}));
+				sendDataPotassium(JSON.stringify({ sence: '4'}));
 			},
 			clickPlayVideo(e) {
 				// console.log(e.currentTarget.dataset.index);
@@ -303,18 +336,28 @@
 			},
 			langTap() {
 				clearTimeout(langtaptimeout);
+				if(!this.tipsPoint){
+					uni.showToast({
+						icon:'error',
+						title:"WS offline"
+					})
+					return false;
+				}
 				let langtaptimeout = setTimeout(() => {
 					console.log('langTap');
 					this.recorder.start();
 					this.showUserPart = false;
 					this.showRobotPart = false;
 					this.isLangTap = true;
+					this.isThinking = false;
 					this.userMsg = '';
 					this.robotMsg = '';
+					// this.robotMsgList = '';
+					this.robotMsgList = [];
 					this.recording = true;
 					this.recordStatus = 2;
-					// sendDataPotassium(JSON.stringify({ sence: '3'}));
 					sendDataPotassium(JSON.stringify({ close: 'close'}));
+					sendDataPotassium(JSON.stringify({ sence: '3'}));
 				}, 200)
 			},
 			touchStart(e) {
@@ -374,7 +417,8 @@
 					axios({
 						// baseURL: 'http://182.92.118.211:30020/business/aiSend/',
 						// baseURL: 'https://share-test.metazen-tech.com/business/aiSend/',
-						baseURL: 'https://aigc.metazen-tech.com/meta-tts/speech/',
+						baseURL: "https://share-test.metazen-tech.com/meta-tts/speech/",
+						// baseURL: 'https://aigc.metazen-tech.com/meta-tts/speech/',
 						method: 'POST',
 						// url: 'speakChange',
 						url: this.langugeType,
@@ -390,11 +434,13 @@
 							// this.userMsg = res.data.msg;
 							this.userMsg = res.data.data;
 							this.showUserPart = true;
+							this.showRobotPart = true;
+							this.isThinking = true;
 							// sendDataPotassium(JSON.stringify({ ask: res.data.msg}));
 							sendDataPotassium(JSON.stringify({ ask: res.data.data}));
 						}else{
 							uni.showToast({
-								title: '当前为说话或录入声音太小',
+								title: '未采集到声音',
 								icon: 'error',
 								duration: 2000
 							});
@@ -501,7 +547,25 @@
 		height: 40rpx;
 		margin-right: 32rpx;
 	}
-
+	.tipsPoint{
+		width: 20rpx;
+		height: 20rpx;
+		background-color: #fff;
+		border-radius: 50%;
+		margin-left: 20rpx;
+	}
+	.redPoint{
+		width: 20rpx;
+		height: 20rpx;
+		background-color: red;
+		border-radius: 50%;
+	}
+	.greenPoint{
+		width: 20rpx;
+		height: 20rpx;
+		background-color: #17BA4D;
+		border-radius: 50%;
+	}
 	.optionBtn {
 		width: 96vw;
 		height: auto;
@@ -664,9 +728,9 @@
 
 	.chat {
 		width: 90vw;
-		height: 65vh;
+		height: 70vh;
 		overflow: scroll;
-		margin: 120rpx auto;
+		margin: 20rpx auto 120rpx;
 	}
 
 	.userPart {
@@ -687,8 +751,10 @@
 	}
 
 	.userPart .headimg>image {
-		width: 80rpx;
-		height: 80rpx;
+		width: 70rpx;
+		height: 70rpx;
+		margin-top: 10rpx;
+		margin-left: 5rpx;
 	}
 
 	.userPart .triangle {
@@ -702,6 +768,7 @@
 	.userPart .text {
 		width: 400rpx;
 		/* min-height: 80rpx; */
+		/* border-radius: 10rpx; */
 		overflow: hidden;
 		padding: 25rpx;
 		background-color: #303030;
@@ -711,54 +778,96 @@
 		font-weight: 400;
 		color: #FFFFFF;
 		line-height: 40rpx;
-		word-break: break-all;
+		/* word-break: break-all; */
 	}
 
 	.robotPart {
 		width: 90vw;
-		min-height: 150rpx;
+		/* min-height: 150rpx; */
 		height: auto;
 		margin-top: 20rpx;
 		overflow: hidden;
+		
+
+	}
+	.robotPart .robotPartList{
+		width: 90vw;
+		min-height: 80rpx;
+		margin-top: 20rpx;
 		display: flex;
 		flex-direction: row;
 		justify-content: flex-start;
 	}
 
-	.robotPart .headimg {
+	.robotPartList .headimg {
 		width: 80rpx;
 		height: 80rpx;
 		background-color: #000;
 		border-radius: 50%;
 	}
 
-	.robotPart .headimg>image {
-		width: 60rpx;
-		height: 50rpx;
-		margin-top: 15rpx;
-		margin-left: 10rpx;
+	.robotPartList .headimg>image {
+		width: 80rpx;
+		height: 80rpx;
+		border-radius: 50%;
+	/* 	margin-top: 15rpx;
+		margin-left: 10rpx; */
 	}
 
-	.robotPart .triangle {
+	.robotPartList .triangle {
 		border: 10px solid transparent;
 		border-right-color: #000;
 		width: 0;
 		height: 0;
 		margin-top: 20rpx;
 	}
-
-	.robotPart .text {
-		width: 450rpx;
-		/* min-height: 80rpx; */
+	.robotPartList .thinking {
+		width: 178rpx;
+		height: 92rpx;
+		/* border-radius: 10rpx; */
 		overflow: hidden;
-		padding: 32rpx;
+		padding:0 20rpx;
 		background-color: #000;
 		font-size: 15px;
 		font-family: PingFang SC;
 		font-weight: 400;
 		color: #FFFFFF;
 		line-height: 40rpx;
-		word-break: break-all;
+		/* word-break: break-all; */
+	}
+	.robotPartList .thinking>image{
+		display: block;
+		width: 100%;
+	}
+	.robotPartList .text {
+		width: auto;
+		max-width: 400rpx;
+		/* min-height: 80rpx; */
+		/* border-radius: 10rpx; */
+		overflow: hidden;
+		padding: 26rpx;
+		background-color: #000;
+		font-size: 15px;
+		font-family: PingFang SC;
+		font-weight: 400;
+		color: #FFFFFF;
+		line-height: 40rpx;
+		/* word-break: break-all; */
+	}
+	.robotPartList .sort {
+		width: 96rpx;
+		height: 92rpx;
+		/* border-radius: 10rpx; */
+		overflow: hidden;
+		/* padding: 32rpx; */
+		background-color: #202020;
+		font-size: 15px;
+		font-family: PingFang SC;
+		font-weight: 400;
+		color: #FFFFFF;
+		text-align: center;
+		line-height: 92rpx;
+		/* word-break: break-all; */
 	}
 	
 	.popupWSSMain{
